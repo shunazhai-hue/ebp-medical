@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EBP 健康风险智能评估系统</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f5f0e8;
+    --accent: #c84b31;
+    --accent2: #2d6a4f;
+    --gold: #d4a017;
+    --muted: #8a8578;
+    --card: #ffffff;
+    --border: #d9d2c5;
+    --risk-high: #c84b31;
+    --risk-mid: #e07b39;
+    --risk-low: #2d6a4f;
+    --risk-none: #6b7280;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Serif SC', serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 28px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--accent);
+  }
+  .logo-en {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+  .logo-zh { font-size: 22px; font-weight: 700; letter-spacing: 0.05em; }
+  .header-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+  .section-title {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+  }
+  .section-title span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .section-title h2 { font-size: 20px; font-weight: 600; }
+
+  /* Upload */
+  .upload-section { padding: 48px 0 32px; }
+  .upload-card {
+    background: var(--card);
+    border: 2px dashed var(--border);
+    border-radius: 4px; padding: 48px;
+    text-align: center; cursor: pointer;
+    transition: all 0.2s; position: relative;
+  }
+  .upload-card:hover, .upload-card.drag-over {
+    border-color: var(--accent); background: #fff8f6;
+  }
+  .upload-card input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { font-size: 48px; margin-bottom: 16px; display: block; }
+  .upload-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .upload-sub { font-size: 13px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  .hint-box {
+    margin-top: 12px; padding: 12px 16px;
+    background: var(--paper); border: 1px solid var(--border);
+    border-radius: 4px; font-size: 12px; color: var(--muted);
+  }
+
+  /* Stats */
+  .data-preview { display: none; padding: 32px 0; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; padding: 20px; position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px; background: var(--accent);
+  }
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.15em;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 8px;
+  }
+  .stat-val { font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .stat-note { font-size: 12px; color: var(--muted); }
+
+  /* Mapping */
+  .table-wrap {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; overflow: hidden; margin-bottom: 24px;
+  }
+  .table-head {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .table-head h3 { font-size: 14px; font-weight: 600; }
+
+  .mapping-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; padding: 20px; }
+  .mapping-row { display: flex; align-items: center; gap: 8px; }
+  .mapping-row label {
+    min-width: 140px; font-size: 12px; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .mapping-row select {
+    flex: 1; padding: 6px 10px; border: 1px solid var(--border);
+    border-radius: 3px; font-family: 'Noto Serif SC', serif;
+    font-size: 12px; background: var(--card); cursor: pointer;
+  }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: var(--paper); padding: 10px 14px; text-align: left;
+    font-size: 11px; letter-spacing: 0.05em; color: var(--muted);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  tbody tr { border-bottom: 1px solid #f0ece4; }
+  tbody tr:hover { background: #faf8f4; }
+  tbody td { padding: 9px 14px; white-space: nowrap; }
+
+  /* Button */
+  .analyze-btn {
+    display: block; width: 100%; padding: 18px;
+    background: var(--ink); color: var(--paper);
+    border: none; font-family: 'Noto Serif SC', serif;
+    font-size: 16px; font-weight: 600; cursor: pointer;
+    letter-spacing: 0.1em; transition: all 0.2s;
+    border-radius: 4px; margin-bottom: 32px;
+  }
+  .analyze-btn:hover:not(:disabled) { background: var(--accent); }
+  .analyze-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+  /* Results */
+  .results-section { display: none; padding-bottom: 64px; }
+  .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+  .result-card { background: var(--card); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .result-card-head {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    font-size: 14px; font-weight: 600;
+  }
+  .result-card-body { padding: 20px; }
+
+  /* Badges */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 2px;
+    font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    font-weight: 600; letter-spacing: 0.05em;
+  }
+  .badge-high { background: #fde8e4; color: var(--risk-high); }
+  .badge-mid  { background: #fef0e4; color: var(--risk-mid); }
+  .badge-low  { background: #e4f0ea; color: var(--risk-low); }
+  .badge-none { background: #f0f0f0; color: var(--risk-none); }
+
+  /* AI Summary */
+  .ai-summary {
+    background: var(--card); border: 1px solid var(--border);
+    border-left: 4px solid var(--accent); border-radius: 4px;
+    padding: 24px 28px; margin-bottom: 24px;
+  }
+  .ai-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 12px;
+  }
+  .ai-text { font-size: 14px; line-height: 1.9; white-space: pre-wrap; }
+
+  /* Loading */
+  .loading-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 64px; gap: 16px;
+  }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--muted); letter-spacing: 0.1em;
+  }
+
+  /* Distribution chart */
+  .dist-header { display: flex; gap: 20px; margin-bottom: 16px; }
+  .dist-stat { text-align: center; }
+  .dist-stat-num { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; }
+  .dist-stat-lbl { font-size: 11px; color: var(--muted); }
+  .dist-chart { display: flex; gap: 4px; align-items: flex-end; height: 72px; }
+  .dist-bar { flex: 1; border-radius: 2px 2px 0 0; min-height: 4px; transition: height 0.5s ease; }
+  .dist-labels { display: flex; gap: 4px; margin-top: 4px; }
+  .dist-label { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); text-align: center; }
+
+  footer {
+    background: var(--ink); color: var(--muted);
+    text-align: center; padding: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em;
+  }
+
+  .export-btn {
+    padding: 6px 14px; border: 1px solid var(--border);
+    background: var(--card); cursor: pointer;
+    font-size: 12px; border-radius: 3px;
+    font-family: 'Noto Serif SC', serif;
+    transition: all 0.15s;
+  }
+  .export-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  @media (max-width: 768px) {
+    header { padding: 20px 16px; flex-direction: column; gap: 12px; }
+    .container { padding: 0 16px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .results-grid { grid-template-columns: 1fr; }
+    .mapping-grid { grid-template-columns: 1fr; }
+    .header-badge { text-align: left; }
+  }
+</style>
+  <script>
+    window.API_ENDPOINT = 'https://ebp-medical1.vercel.app/api/analyze';
+    window.IS_MOBILE_APP = true;
+  </script>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-en">Evidence-Based Practice · Medical AI</div>
+    <div class="logo-zh">健康风险智能评估系统</div>
+  </div>
+  <div class="header-badge">
+    EBP / CLINICAL DECISION SUPPORT<br>
+    基于循证医学的健康风险分层
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Step 1: Upload -->
+  <div class="upload-section">
+    <div class="section-title">
+      <span>STEP 01</span>
+      <h2>上传体检数据</h2>
+    </div>
+    <div class="upload-card" id="uploadCard">
+      <input type="file" id="fileInput" accept=".csv">
+      <span class="upload-icon">📋</span>
+      <div class="upload-title">拖拽 CSV 文件至此，或点击选择</div>
+      <div class="upload-sub">支持 UTF-8 / GB18030 编码 · 第一行为表头</div>
+    </div>
+    <div class="hint-box">
+      <strong style="color:var(--ink);">推荐字段：</strong>
+      姓名、年龄、性别、收缩压、舒张压、BMI、腰围、空腹血糖、糖化血红蛋白、总胆固醇、甘油三酯、高密度脂蛋白、低密度脂蛋白、高血压史、糖尿病史、吸烟
+    </div>
+  </div>
+
+  <!-- Step 2: Preview & Mapping -->
+  <div class="data-preview" id="dataPreview">
+    <div class="section-title">
+      <span>STEP 02</span>
+      <h2>数据预览 &amp; 字段映射</h2>
+    </div>
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="table-wrap">
+      <div class="table-head">
+        <h3>关键字段映射</h3>
+        <span style="font-size:12px;color:var(--muted);">系统自动识别，可手动调整</span>
+      </div>
+      <div class="mapping-grid" id="mappingGrid"></div>
+    </div>
+
+    <div class="table-wrap" style="margin-bottom:32px;">
+      <div class="table-head">
+        <h3>数据预览（前 10 行）</h3>
+        <span id="rowCount" style="font-size:12px;color:var(--muted);"></span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table id="previewTable"></table>
+      </div>
+    </div>
+
+    <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">
+      🔬 开始 AI 风险评估分析
+    </button>
+  </div>
+
+  <!-- Step 3: Results -->
+  <div class="results-section" id="resultsSection">
+    <div class="section-title">
+      <span>STEP 03</span>
+      <h2>评估结果</h2>
+    </div>
+
+    <div id="loadingWrap" class="loading-wrap">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loadingText">正在计算风险评分...</div>
+    </div>
+
+    <div id="resultsContent" style="display:none;">
+
+      <div class="ai-summary">
+        <div class="ai-label">🤖 AI 循证评估报告</div>
+        <div class="ai-text" id="aiText"></div>
+      </div>
+
+      <div class="results-grid">
+        <div class="result-card">
+          <div class="result-card-head">🩸 糖尿病风险分布</div>
+          <div class="result-card-body" id="diabetesChart"></div>
+        </div>
+        <div class="result-card">
+          <div class="result-card-head">💓 高血压风险分布</div>
+          <div class="result-card-body" id="hypertensionChart"></div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-head">
+          <h3>个体风险评估明细</h3>
+          <button class="export-btn" onclick="downloadResults()">⬇ 导出 CSV</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="resultTable"></table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  EBP MEDICAL AI · 本系统仅供参考，不替代专业医疗诊断 · Evidence-Based Clinical Decision Support
+</footer>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let csvData = [], csvHeaders = [], fieldMap = {}, analysisResults = [];
+
+const FIELD_DEFS = [
+  { key:'name',   label:'姓名',         kw:['姓名','name'] },
+  { key:'age',    label:'年龄',         kw:['年龄','age'] },
+  { key:'sex',    label:'性别',         kw:['性别','sex','gender'] },
+  { key:'sbp',    label:'收缩压',       kw:['收缩压','sbp','systolic'] },
+  { key:'dbp',    label:'舒张压',       kw:['舒张压','dbp','diastolic'] },
+  { key:'bmi',    label:'BMI',          kw:['bmi','体重指数'] },
+  { key:'waist',  label:'腰围',         kw:['腰围','waist'] },
+  { key:'fbg',    label:'空腹血糖',     kw:['空腹血糖','fbg','glucose','血糖'] },
+  { key:'hba1c',  label:'糖化血红蛋白', kw:['糖化','hba1c'] },
+  { key:'tc',     label:'总胆固醇',     kw:['总胆固醇','胆固醇','tc','chol'] },
+  { key:'tg',     label:'甘油三酯',     kw:['甘油三酯','tg'] },
+  { key:'hdl',    label:'高密度脂蛋白', kw:['高密度','hdl'] },
+  { key:'ldl',    label:'低密度脂蛋白', kw:['低密度','ldl'] },
+  { key:'dm_hx',  label:'糖尿病史',     kw:['糖尿病史','糖尿病'] },
+  { key:'htn_hx', label:'高血压史',     kw:['高血压史','高血压'] },
+  { key:'smoke',  label:'吸烟',         kw:['吸烟','smoke'] },
+];
+
+// ── File handling ──────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+const card = document.getElementById('uploadCard');
+card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
+card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+card.addEventListener('drop', e => {
+  e.preventDefault(); card.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+function loadFile(file) {
+  const r = new FileReader();
+  r.onload = e => {
+    try { parseCSV(e.target.result); }
+    catch {
+      const r2 = new FileReader();
+      r2.onload = e2 => parseCSV(e2.target.result);
+      r2.readAsText(file, 'GB18030');
+    }
+  };
+  r.readAsText(file, 'UTF-8');
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').map(l => l.replace(/\r/g,''));
+  const parse = line => {
+    const res=[]; let cur='', inQ=false;
+    for (let c of line) {
+      if (c==='"') inQ=!inQ;
+      else if (c===',' && !inQ) { res.push(cur.trim()); cur=''; }
+      else cur+=c;
+    }
+    res.push(cur.trim()); return res;
+  };
+  csvHeaders = parse(lines[0]);
+  csvData = lines.slice(1).filter(l=>l.trim()).map(l => {
+    const v=parse(l), row={};
+    csvHeaders.forEach((h,i) => row[h]=v[i]||'');
+    return row;
+  });
+  fieldMap = {};
+  FIELD_DEFS.forEach(def => {
+    const m = csvHeaders.find(h => def.kw.some(k => h.toLowerCase().includes(k)));
+    fieldMap[def.key] = m||'';
+  });
+  renderPreview();
+}
+
+function renderPreview() {
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">总记录数</div><div class="stat-val">${csvData.length}</div><div class="stat-note">条患者数据</div></div>
+    <div class="stat-card"><div class="stat-label">字段数量</div><div class="stat-val">${csvHeaders.length}</div><div class="stat-note">个数据列</div></div>
+    <div class="stat-card"><div class="stat-label">已识别字段</div><div class="stat-val">${Object.values(fieldMap).filter(v=>v).length}</div><div class="stat-note">/ ${FIELD_DEFS.length} 个关键字段</div></div>
+    <div class="stat-card"><div class="stat-label">字段覆盖率</div><div class="stat-val">${Math.round(Object.values(fieldMap).filter(v=>v).length/FIELD_DEFS.length*100)}%</div><div class="stat-note">关键指标完整性</div></div>
+  `;
+
+  document.getElementById('mappingGrid').innerHTML = FIELD_DEFS.map(def => `
+    <div class="mapping-row">
+      <label>${def.label}</label>
+      <select onchange="fieldMap['${def.key}']=this.value">
+        <option value="">— 未映射 —</option>
+        ${csvHeaders.map(h=>`<option value="${h}" ${fieldMap[def.key]===h?'selected':''}>${h}</option>`).join('')}
+      </select>
+    </div>
+  `).join('');
+
+  document.getElementById('rowCount').textContent = `共 ${csvData.length} 行`;
+  const cols = csvHeaders.slice(0,12);
+  document.getElementById('previewTable').innerHTML = `
+    <thead><tr>${cols.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${csvData.slice(0,10).map(r=>`<tr>${cols.map(h=>`<td>${r[h]||''}</td>`).join('')}</tr>`).join('')}</tbody>
+  `;
+
+  document.getElementById('dataPreview').style.display = 'block';
+  document.getElementById('dataPreview').scrollIntoView({behavior:'smooth'});
+}
+
+// ── Risk classification ────────────────────────────────────────────
+function classify(row) {
+  const g  = k => { const c=fieldMap[k]; return c ? parseFloat(row[c]) : NaN; };
+  const gs = k => { const c=fieldMap[k]; return c ? (row[c]||'') : ''; };
+
+  const fbg=g('fbg'), hba1c=g('hba1c'), sbp=g('sbp'), dbp=g('dbp');
+  const bmi=g('bmi'), waist=g('waist'), tg=g('tg'), hdl=g('hdl');
+  const age=parseInt(g('age')), sex=gs('sex');
+  const dmHx=gs('dm_hx'), htnHx=gs('htn_hx'), smoke=gs('smoke');
+
+  // Diabetes (ADA + CDS)
+  let dms=0, dmf=[];
+  if (!isNaN(fbg)) {
+    if (fbg>=7.0)      { dms+=40; dmf.push(`空腹血糖${fbg}≥7.0`); }
+    else if (fbg>=6.1) { dms+=25; dmf.push(`空腹血糖${fbg}(糖耐量受损)`); }
+    else if (fbg>=5.6) { dms+=10; dmf.push(`空腹血糖${fbg}偏高`); }
+  }
+  if (!isNaN(hba1c)) {
+    if (hba1c>=6.5)    { dms+=35; dmf.push(`HbA1c ${hba1c}%≥6.5`); }
+    else if (hba1c>=5.7){ dms+=15; dmf.push(`HbA1c ${hba1c}%(前驱)`); }
+  }
+  if (!isNaN(bmi) && bmi>=28)    { dms+=10; dmf.push(`BMI ${bmi}(肥胖)`); }
+  if (!isNaN(age) && age>=45)    { dms+=8;  dmf.push(`年龄${age}≥45`); }
+  if (dmHx.includes('有'))       { dms+=20; dmf.push('既往糖尿病史'); }
+  if (smoke && !smoke.includes('不') && !smoke.includes('从不')) { dms+=5; dmf.push('吸烟'); }
+  dms = Math.min(dms, 100);
+
+  // Hypertension (中国高血压防治指南)
+  let hts=0, htf=[];
+  if (!isNaN(sbp)) {
+    if (sbp>=180)      { hts+=50; htf.push(`收缩压${sbp}(3级)`); }
+    else if (sbp>=160) { hts+=35; htf.push(`收缩压${sbp}(2级)`); }
+    else if (sbp>=140) { hts+=20; htf.push(`收缩压${sbp}(1级)`); }
+    else if (sbp>=130) { hts+=10; htf.push(`收缩压${sbp}(正常高值)`); }
+  }
+  if (!isNaN(dbp)) {
+    if (dbp>=110)      { hts+=30; htf.push(`舒张压${dbp}(3级)`); }
+    else if (dbp>=100) { hts+=20; htf.push(`舒张压${dbp}(2级)`); }
+    else if (dbp>=90)  { hts+=12; htf.push(`舒张压${dbp}(1级)`); }
+  }
+  if (htnHx.includes('有'))      { hts+=15; htf.push('既往高血压史'); }
+  if (!isNaN(age) && age>=60)    { hts+=8;  htf.push(`年龄${age}`); }
+  if (!isNaN(bmi) && bmi>=28)    { hts+=5;  htf.push(`BMI ${bmi}`); }
+  hts = Math.min(hts, 100);
+
+  // Metabolic syndrome (IDF)
+  const sex_m = sex==='男';
+  let mf=[];
+  if (!isNaN(waist) && ((sex_m&&waist>=90)||(!sex_m&&waist>=80))) mf.push('腰围超标');
+  if (!isNaN(tg) && tg>=1.7)    mf.push(`TG ${tg}`);
+  if (!isNaN(hdl) && ((sex_m&&hdl<1.0)||(!sex_m&&hdl<1.3))) mf.push('HDL偏低');
+  if (!isNaN(sbp) && sbp>=130)  mf.push('血压偏高');
+  if (!isNaN(fbg) && fbg>=5.6)  mf.push('血糖偏高');
+  const mr = mf.length>=3?'HIGH': mf.length===2?'MID':'LOW';
+
+  const lvl = s => s>=60?'HIGH': s>=30?'MID': s>=10?'LOW':'NONE';
+  return {
+    name: gs('name')||row[csvHeaders[0]]||'—', age, sex,
+    dmScore:dms, dmLevel:lvl(dms), dmFlags:dmf,
+    htnScore:hts, htnLevel:lvl(hts), htnFlags:htf,
+    metaRisk:mr, metaFlags:mf,
+  };
+}
+
+const RLABEL = {HIGH:'高风险', MID:'中风险', LOW:'低风险', NONE:'正常'};
+const RCOLOR = {HIGH:'#c84b31', MID:'#e07b39', LOW:'#2d6a4f', NONE:'#6b7280'};
+
+// ── Analysis ───────────────────────────────────────────────────────
+async function runAnalysis() {
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('loadingWrap').style.display = 'flex';
+  document.getElementById('resultsContent').style.display = 'none';
+  document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
+
+  analysisResults = csvData.map(classify);
+
+  const n      = analysisResults.length;
+  const highDM = analysisResults.filter(r=>r.dmLevel==='HIGH').length;
+  const midDM  = analysisResults.filter(r=>r.dmLevel==='MID').length;
+  const highHT = analysisResults.filter(r=>r.htnLevel==='HIGH').length;
+  const midHT  = analysisResults.filter(r=>r.htnLevel==='MID').length;
+  const highMS = analysisResults.filter(r=>r.metaRisk==='HIGH').length;
+  const ages   = analysisResults.filter(r=>r.age>0).map(r=>r.age);
+  const avgAge = ages.length ? Math.round(ages.reduce((a,b)=>a+b,0)/ages.length) : '—';
+
+  document.getElementById('loadingText').textContent = 'AI 正在生成循证评估报告...';
+
+  const prompt = `你是具有循证医学背景的公共卫生医生，请根据以下社区体检数据，撰写简洁的健康风险评估报告（中文，约300字，纯段落文字，不用Markdown）：
+
+数据：总人数${n}人，平均年龄${avgAge}岁
+糖尿病风险：高风险${highDM}人(${(highDM/n*100).toFixed(1)}%)，中风险${midDM}人(${(midDM/n*100).toFixed(1)}%)
+高血压风险：高风险${highHT}人(${(highHT/n*100).toFixed(1)}%)，中风险${midHT}人(${(midHT/n*100).toFixed(1)}%)
+代谢综合征高风险：${highMS}人(${(highMS/n*100).toFixed(1)}%)
+
+请包含：①整体风险概述 ②主要风险因素 ③循证干预建议（参考中国指南）`;
+
+  let aiText = '';
+  try {
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    aiText = data.content?.map(b=>b.text||'').join('') || '（AI 服务暂时不可用）';
+  } catch {
+    aiText = `本次分析共评估 ${n} 名受检者（平均年龄 ${avgAge} 岁）。糖尿病高风险人群 ${highDM} 人（${(highDM/n*100).toFixed(1)}%），高血压高风险人群 ${highHT} 人（${(highHT/n*100).toFixed(1)}%），代谢综合征高风险 ${highMS} 人（${(highMS/n*100).toFixed(1)}%）。建议对高风险人群加强随访，给予个体化生活方式干预及必要的药物治疗。`;
+  }
+
+  document.getElementById('aiText').textContent = aiText;
+  renderChart('diabetesChart',    analysisResults.map(r=>r.dmScore));
+  renderChart('hypertensionChart', analysisResults.map(r=>r.htnScore));
+
+  document.getElementById('resultTable').innerHTML = `
+    <thead><tr>
+      <th>#</th><th>姓名</th><th>年龄</th><th>性别</th>
+      <th>糖尿病风险</th><th>DM分</th>
+      <th>高血压风险</th><th>HTN分</th>
+      <th>代谢综合征</th><th>主要风险因素</th>
+    </tr></thead>
+    <tbody>
+      ${analysisResults.map((r,i) => `
+        <tr>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${i+1}</td>
+          <td><strong>${r.name}</strong></td>
+          <td>${r.age||'—'}</td>
+          <td>${r.sex||'—'}</td>
+          <td><span class="badge badge-${r.dmLevel.toLowerCase()}">${RLABEL[r.dmLevel]}</span></td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${r.dmScore}</td>
+          <td><span class="badge badge-${r.htnLevel.toLowerCase()}">${RLABEL[r.htnLevel]}</span></td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${r.htnScore}</td>
+          <td><span class="badge badge-${r.metaRisk.toLowerCase()}">${RLABEL[r.metaRisk]}</span></td>
+          <td style="font-size:11px;color:var(--muted);max-width:200px;white-space:normal;">${[...r.dmFlags,...r.htnFlags].slice(0,3).join('；')||'—'}</td>
+        </tr>`).join('')}
+    </tbody>`;
+
+  document.getElementById('loadingWrap').style.display = 'none';
+  document.getElementById('resultsContent').style.display = 'block';
+  btn.disabled = false;
+}
+
+function renderChart(id, scores) {
+  const counts = new Array(10).fill(0);
+  scores.forEach(s => { if(!isNaN(s)) counts[Math.min(Math.floor(s/10),9)]++; });
+  const maxC = Math.max(...counts, 1);
+  const n = scores.length;
+  const high = scores.filter(s=>s>=60).length;
+  const mid  = scores.filter(s=>s>=30&&s<60).length;
+  const low  = scores.filter(s=>s>=10&&s<30).length;
+  const none = scores.filter(s=>s<10).length;
+
+  document.getElementById(id).innerHTML = `
+    <div class="dist-header">
+      ${[['HIGH','高风险',high],['MID','中风险',mid],['LOW','低风险',low],['NONE','正常',none]].map(([l,lbl,c])=>`
+        <div class="dist-stat">
+          <div class="dist-stat-num" style="color:${RCOLOR[l]}">${c}</div>
+          <div class="dist-stat-lbl">${lbl} ${(c/n*100).toFixed(0)}%</div>
+        </div>`).join('')}
+    </div>
+    <div class="dist-chart">
+      ${counts.map((c,i)=>`
+        <div class="dist-bar" style="height:${Math.round(c/maxC*100)}%;background:${i>=6?'#c84b31':i>=3?'#e07b39':'#2d6a4f'};" title="${i*10}-${i*10+10}分: ${c}人"></div>
+      `).join('')}
+    </div>
+    <div class="dist-labels">
+      ${[0,10,20,30,40,50,60,70,80,90].map(v=>`<div class="dist-label">${v}</div>`).join('')}
+    </div>`;
+}
+
+function downloadResults() {
+  const hdr = ['姓名','年龄','性别','糖尿病风险','DM评分','DM风险因素','高血压风险','HTN评分','HTN风险因素','代谢综合征'];
+  const rows = analysisResults.map(r => [
+    r.name, r.age||'', r.sex||'',
+    RLABEL[r.dmLevel], r.dmScore, r.dmFlags.join(';'),
+    RLABEL[r.htnLevel], r.htnScore, r.htnFlags.join(';'),
+    RLABEL[r.metaRisk]
+  ]);
+  const csv = [hdr,...rows].map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'}));
+  a.download = 'EBP_风险评估结果.csv';
+  a.click();
+}
+</script>
+</body>
+</html>

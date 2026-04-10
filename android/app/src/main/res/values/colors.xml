@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ebp_accent">#C84B31</color>
+    <color name="ebp_ink">#1A1A2E</color>
+    <color name="ebp_paper">#F5F0E8</color>
+    <color name="ebp_gold">#D4A017</color>
+    <color name="background">#F5F0E8</color>
+    <color name="text_muted">#8A8578</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>

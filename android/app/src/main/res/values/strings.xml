@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">EBP 健康风险评估</string>
+    <string name="settings">设置</string>
+    <string name="refresh">刷新</string>
+    <string name="api_endpoint">API 地址</string>
+</resources>
