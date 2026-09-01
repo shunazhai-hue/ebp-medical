@@ -565,7 +565,7 @@ async function runAnalysis() {
 
   let aiText = '';
   try {
-    const resp = await fetch('/api/analyze', {
+    const resp = await fetch(window.API_ENDPOINT || '/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
