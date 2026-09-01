@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val PREFS_NAME = "EBPPrefs"
         const val KEY_API_ENDPOINT = "api_endpoint"
-        const val DEFAULT_ENDPOINT = "https://YOUR-VERCEL-URL.vercel.app/api/analyze"
+        const val DEFAULT_ENDPOINT = "https://ebp-medical1.vercel.app/api/analyze"
     }
 
     @SuppressLint("SetJavaScriptEnabled")
